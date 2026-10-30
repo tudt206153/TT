@@ -4,7 +4,7 @@ services:
   - type: web
     name: woocommerce-live-view
     runtime: node
-    plan: starter            # gói luôn chạy; gói free sẽ "ngủ" khi không có truy cập
+    plan: free            # gói luôn chạy; gói free sẽ "ngủ" khi không có truy cập
     region: singapore        # gần Việt Nam nhất
     buildCommand: npm install
     startCommand: node server.js
