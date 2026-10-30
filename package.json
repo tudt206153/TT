@@ -1,0 +1,9 @@
+{
+  "name": "woocommerce-live-view",
+  "version": "1.0.0",
+  "description": "Xem trực tiếp khách đang xem sản phẩm, thêm giỏ hàng và thanh toán trên WooCommerce",
+  "main": "server.js",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node server.js" }
+}

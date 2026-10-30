@@ -1,0 +1,24 @@
+# Cấu hình cài đặt một lần bấm trên Render (https://render.com).
+# Khi bấm "Deploy to Render", Render chỉ hỏi 2 thông tin: SITE_ORIGIN và ADMIN_PASSWORD.
+services:
+  - type: web
+    name: woocommerce-live-view
+    runtime: node
+    plan: starter            # gói luôn chạy; gói free sẽ "ngủ" khi không có truy cập
+    region: singapore        # gần Việt Nam nhất
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: SITE_ORIGIN       # địa chỉ web bán hàng, vd: shopcuaban.vn
+        sync: false
+      - key: ADMIN_PASSWORD    # mật khẩu đăng nhập Live View
+        sync: false
+      - key: WC_WEBHOOK_SECRET # Render tự tạo
+        generateValue: true
+      - key: ADMIN_USER
+        value: admin
+      - key: TIMEZONE
+        value: Asia/Ho_Chi_Minh
+      - key: TRUST_PROXY
+        value: "1"
