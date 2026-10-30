@@ -282,7 +282,7 @@ a.now:hover b, .now a:hover { text-decoration: underline; }
       '<li>Web có Google Tag Manager: tạo thẻ Custom HTML, chọn kích hoạt trên All Pages, rồi Publish.</li>' +
       '<li>Nếu dùng WP Rocket hoặc LiteSpeed với tính năng trì hoãn JavaScript (Delay JS), thêm <code>t.js</code> vào danh sách loại trừ.</li>' +
       '</ul></details>';
-    if (s1[0] === 'ok') h += '<p style="margin-top:10px">Nhận tín hiệu gần nhất ' + since(hs.lastCollect) + '.</p>';
+    if (s1[0] === 'ok') h += '<p style="margin-top:10px">Nhận tín hiệu gần nhất ' + since(hs.lastCollect) + '. <button type="button" data-act="live">Mở Live View</button></p>';
     else if (s1[0] === 'err') h += '<p class="note err">Web đang gửi tín hiệu từ <b>' + esc(hs.rejectedOrigin) + '</b>, nhưng địa chỉ web đã cài là <b>' + esc(c.sites.join(', ') || '(chưa có)') + '</b>. Sửa lại địa chỉ web trong phần cài đặt của app cho khớp, rồi khởi động lại app.</p>';
     else h += '<p style="margin-top:10px">Sau khi dán mã, mở web của bạn trong <b>cửa sổ ẩn danh</b>. Tài khoản quản trị đang đăng nhập sẽ không được tính.</p>';
     if (!c.https) h += '<p class="note warn">App đang chạy không có HTTPS. Trình duyệt sẽ chặn đoạn mã trên web dùng HTTPS.</p>';
@@ -318,14 +318,24 @@ a.now:hover b, .now a:hover { text-decoration: underline; }
   setInterval(function () { if (state.view === 'setup' && document.visibilityState === 'visible') loadSetup(); }, 4000);
 
   var es = new EventSource('/api/stream');
+  var lastMsg = 0;
   es.onmessage = function (m) {
+    lastMsg = Date.now();
     try {
       var d = JSON.parse(m.data);
       if (!state.view) { state.view = d.connected ? 'live' : 'setup'; if (state.view === 'setup') loadSetup(); }
       take(d);
     } catch (e) {}
   };
-  es.onerror = function () { state.error = 'Mất kết nối với máy chủ. Đang kết nối lại…'; render(); };
+  es.onerror = function () { if (Date.now() - lastMsg > 15000) { state.error = 'Mất kết nối với máy chủ. Đang kết nối lại…'; render(); } };
+  // Dự phòng: nếu 6 giây không nhận được cập nhật trực tiếp thì tự hỏi máy chủ.
+  setInterval(function () {
+    if (document.visibilityState !== 'visible' || Date.now() - lastMsg < 6000) return;
+    fetch('/api/live', { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) { if (!state.view) state.view = d.connected ? 'live' : 'setup'; take(d); })
+      .catch(function () {});
+  }, 3000);
 
   function focusVisitor(sid) {
     state.focus = state.focus === sid ? '' : sid;

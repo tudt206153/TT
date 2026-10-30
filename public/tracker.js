@@ -125,9 +125,11 @@
   }
 
   // Lần đầu: chỉ gọi Store API khi khách có hàng trong giỏ hoặc đang ở trang giỏ/thanh toán.
+  // Báo trang đang xem NGAY LẬP TỨC (không đợi giỏ hàng), để khách chuyển trang nhanh vẫn được ghi nhận.
   var needCart = /(?:^|; )woocommerce_items_in_cart=1/.test(document.cookie) || /^(cart|checkout|thankyou)$/.test(pageType);
-  var first = needCart ? readCart() : Promise.resolve(cart = EMPTY);
-  first.then(function () { readOrder(); send('page'); });
+  if (!needCart) cart = EMPTY;
+  send('page');
+  if (needCart) readCart().then(function () { readOrder(); send('cart'); });
 
   // Khi giỏ hàng thay đổi (cả kiểu cũ lẫn kiểu Block) thì đọc lại và báo về.
   var timer = null;
@@ -147,6 +149,32 @@
     } catch (e) {}
     return p;
   };
+
+  // Xem nhanh (Quick View) của Flatsome và nhiều theme khác: ghi nhận như xem sản phẩm.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.quick-view, .open-quickview, [data-prod], .yith-wcqv-button');
+    if (!a) return;
+    var id = +(a.getAttribute('data-prod') || a.getAttribute('data-product_id') || a.getAttribute('data-product-id') || 0);
+    if (!id) return;
+    var box = a.closest('.product, .product-small, li');
+    var nameEl = box && box.querySelector('.name a, .woocommerce-loop-product__title, .product-title a, h2, h3');
+    var imgEl = box && box.querySelector('img');
+    var priceEl = box && box.querySelector('.price');
+    var keep = { type: pageType, product: product };
+    pageType = 'product';
+    product = {
+      id: id,
+      name: nameEl ? nameEl.textContent.replace(/\s+/g, ' ').trim() : '',
+      price: priceEl ? priceEl.textContent.replace(/\s+/g, ' ').trim() : '',
+      image: imgEl ? (imgEl.currentSrc || imgEl.src) : ''
+    };
+    send('page');
+    // Khi đóng hộp xem nhanh thì trở về trang cũ.
+    setTimeout(function watch() {
+      if (document.querySelector('.mfp-ready, .mfp-wrap, #yith-quick-view-modal.open')) return setTimeout(watch, 1500);
+      pageType = keep.type; product = keep.product; send('page');
+    }, 2000);
+  }, true);
 
   // Báo "vẫn đang ở đây" mỗi 20 giây khi tab đang mở.
   setInterval(function () { if (document.visibilityState === 'visible') send('ping'); }, 20000);
