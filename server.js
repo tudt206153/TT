@@ -321,7 +321,7 @@ const streams = new Set();
 let pending = null;
 function changed() {
   if (pending || !streams.size) return;
-  pending = setTimeout(() => { pending = null; broadcast(); }, 800);
+  pending = setTimeout(() => { pending = null; broadcast(); }, 250);
 }
 function broadcast() {
   if (!streams.size) return;
@@ -366,7 +366,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (route === 'GET /t.js') {
-      return sendFile(res, 'tracker.js', 'application/javascript; charset=utf-8', { 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*' });
+      return sendFile(res, 'tracker.js', 'application/javascript; charset=utf-8', { 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' });
     }
     if (route === 'POST /collect') {
       const origin = String(req.headers.origin || '');

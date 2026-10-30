@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --ink: #1b2533; --muted: #5d6878; --line: #dfe3e8; --paper: #ffffff; --bg: #f4f5f7; --lane: #eceff3;
+  --browsing: #5a6b80; --cart: #b7780a; --checkout: #4a48c9; --purchased: #1c8656; --danger: #c62f32;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --ink: #e7ebf0; --muted: #98a3b3; --line: #2c3542; --paper: #18202b; --bg: #10161e; --lane: #151c26;
+    --browsing: #8ea0b7; --cart: #e2a83b; --checkout: #8c8af0; --purchased: #3fbf85; --danger: #f06467;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 14px/1.45 "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: inherit; }
+h1, h2, h3, p { margin: 0; }
+main { max-width: 1500px; margin: 0 auto; padding: 24px 20px 48px; }
+
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.headline h1 { font-size: 22px; font-weight: 500; display: flex; align-items: baseline; gap: 10px; line-height: 1.15; }
+.headline h1 strong { font-size: 48px; font-weight: 700; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; }
+.headline p { margin-top: 6px; color: var(--muted); font-size: 13px; }
+.pulse { width: 11px; height: 11px; border-radius: 50%; background: var(--purchased); align-self: center; animation: pulse 2s infinite; }
+.pulse.off { background: var(--muted); animation: none; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--purchased) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 11px transparent; } }
+.controls { display: flex; align-items: center; gap: 12px; }
+.updated { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.updated.err { color: var(--danger); }
+button { font: inherit; font-size: 13px; font-weight: 500; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, a:focus-visible, li:focus-visible { outline: 2px solid var(--checkout); outline-offset: 2px; }
+
+.today { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 22px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.today > div { padding: 12px 16px 12px 0; }
+.today > div + div { padding-left: 16px; border-left: 1px solid var(--line); }
+.today dt { color: var(--muted); font-size: 12px; }
+.today dd { margin: 2px 0 0; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.today dd small { font-size: 13px; font-weight: 500; color: var(--purchased); margin-left: 4px; }
+
+.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.lane { --c: var(--browsing); background: color-mix(in srgb, var(--c) 7%, var(--lane)); border-top: 3px solid var(--c); border-radius: 0 0 8px 8px; padding: 12px; min-height: 170px; }
+.lane.cart { --c: var(--cart); } .lane.checkout { --c: var(--checkout); } .lane.purchased { --c: var(--purchased); }
+.lane h2 { font-size: 14px; font-weight: 600; color: var(--c); display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.lane h2 span { font-size: 20px; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); font-size: 12px; }
+
+.v { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+.v.focus { outline: 2px solid var(--c); outline-offset: 1px; }
+.v header { display: flex; gap: 9px; align-items: flex-start; }
+.avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 12px; color: #fff; background: var(--c); }
+.v h3 { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.member { font-weight: 500; font-size: 11px; color: var(--c); }
+.v header p { margin-top: 1px; font-size: 11px; color: var(--muted); }
+.now { display: flex; gap: 9px; margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); font-size: 12px; text-decoration: none; min-width: 0; }
+.now img { width: 46px; height: 46px; object-fit: cover; border-radius: 4px; flex: none; background: var(--lane); }
+.now span { display: flex; flex-direction: column; min-width: 0; }
+.now small { color: var(--muted); font-size: 11px; }
+.now b, .now a { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.now em { font-style: normal; color: var(--muted); }
+a.now:hover b, .now a:hover { text-decoration: underline; }
+.line { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 6px 8px; border-radius: 4px; font-size: 12px; background: color-mix(in srgb, var(--cart) 13%, var(--paper)); }
+.line span { color: var(--muted); }
+.line.order { background: color-mix(in srgb, var(--purchased) 13%, var(--paper)); }
+
+.bottom { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 32px; margin-top: 30px; }
+.panel h2 { font-size: 15px; font-weight: 600; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.hot, .feed { list-style: none; margin: 0; padding: 0; }
+.hot li { display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.hot img { width: 38px; height: 38px; object-fit: cover; border-radius: 4px; background: var(--lane); }
+.hot a { font-weight: 600; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hot span { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.feed { max-height: 480px; overflow-y: auto; }
+.feed li { --c: var(--browsing); display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: baseline; padding: 8px 6px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 4px; }
+.feed li:hover { background: var(--lane); }
+.feed p { font-size: 13px; }
+.feed em { font-style: normal; color: var(--muted); }
+.feed time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.ev-add_to_cart, .ev-view_cart, .ev-remove_from_cart { --c: var(--cart) !important; }
+.ev-begin_checkout { --c: var(--checkout) !important; }
+.ev-purchase { --c: var(--purchased) !important; }
+.feed li.new { animation: flash 2.4s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--c) 25%, transparent); } to { background: transparent; } }
+
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; max-width: 860px; }
+.step { counter-increment: step; position: relative; padding: 18px 20px 20px 64px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 14px; }
+.step::before { content: counter(step); position: absolute; left: 20px; top: 18px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--ink); color: var(--paper); }
+.step-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.step h2 { font-size: 17px; font-weight: 600; }
+.step p { color: var(--muted); max-width: 70ch; }
+.step p + p { margin-top: 6px; }
+.chip { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.chip.ok { color: var(--purchased); background: color-mix(in srgb, var(--purchased) 14%, var(--paper)); }
+.chip.wait { color: var(--cart); background: color-mix(in srgb, var(--cart) 14%, var(--paper)); }
+.chip.err { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--paper)); }
+.copy { display: flex; gap: 8px; align-items: stretch; margin-top: 10px; }
+.copy code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--lane); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; }
+.fields { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; align-items: center; margin-top: 12px; }
+.fields dt { font-size: 13px; color: var(--muted); }
+.fields dd { margin: 0; }
+.fields .copy { margin-top: 0; }
+.note { margin-top: 10px; padding: 9px 12px; border-radius: 6px; font-size: 13px; }
+.note.err { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, var(--paper)); }
+.note.warn { color: var(--cart); background: color-mix(in srgb, var(--cart) 11%, var(--paper)); }
+.where { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.where summary { cursor: pointer; color: var(--ink); font-weight: 500; }
+.where ul { margin: 8px 0 0; padding-left: 18px; }
+.where li + li { margin-top: 4px; }
+@media (max-width: 640px) { .step { padding: 16px 14px 16px 52px; } .step::before { left: 14px; } .fields { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bottom { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  main { padding: 16px 12px 40px; }
+  .board { grid-template-columns: 1fr; }
+  .today { grid-template-columns: 1fr 1fr; }
+  .today > div:nth-child(3) { border-left: 0; padding-left: 0; }
+  .today > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .headline h1 strong { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { .pulse, .feed li.new { animation: none; } }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"><p>Đang kết nối…</p></main>
+<script>
+(function () {
+  var app = document.getElementById('app');
+  var state = { data: null, paused: false, error: '', seen: {}, fresh: {}, first: true, at: 0, focus: '', view: '', setup: null, copied: '' };
+  var LANES = [
+    { key: 'browsing', title: 'Đang xem', empty: 'Chưa có ai đang xem.' },
+    { key: 'cart', title: 'Có hàng trong giỏ', empty: 'Chưa có giỏ hàng nào.' },
+    { key: 'checkout', title: 'Đang thanh toán', empty: 'Chưa có ai ở trang thanh toán.' },
+    { key: 'purchased', title: 'Vừa đặt hàng', empty: 'Chưa có đơn mới.' }
+  ];
+  var PAGE = { product: 'Đang xem sản phẩm', shop: 'Ở trang cửa hàng', category: 'Đang xem danh mục', cart: 'Đang mở giỏ hàng',
+    checkout: 'Đang điền thông tin thanh toán', thankyou: 'Ở trang cảm ơn', home: 'Ở trang chủ', other: 'Đang xem' };
+  var EVENT = { view_product: 'xem', add_to_cart: 'thêm vào giỏ', remove_from_cart: 'bỏ khỏi giỏ',
+    view_cart: 'mở giỏ hàng', begin_checkout: 'bắt đầu thanh toán', purchase: 'đặt hàng' };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function url(u) { return /^https?:\/\//i.test(u || '') ? esc(u) : '#'; }
+  function money(v, c) {
+    if (!v) return '';
+    if (!c) return v.toLocaleString('vi-VN');
+    try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: c }).format(v); } catch (e) { return v + ' ' + c; }
+  }
+  function ago(s) {
+    if (s < 10) return 'vừa xong';
+    if (s < 60) return s + ' giây trước';
+    if (s < 3600) return Math.floor(s / 60) + ' phút trước';
+    if (s < 86400) return Math.floor(s / 3600) + ' giờ trước';
+    return Math.floor(s / 86400) + ' ngày trước';
+  }
+  function span(s) {
+    if (s < 60) return 'dưới 1 phút';
+    if (s < 3600) return Math.floor(s / 60) + ' phút';
+    return Math.floor(s / 3600) + ' giờ ' + Math.floor((s % 3600) / 60) + ' phút';
+  }
+  function initial(l) { return esc(String(l).replace(/^Khách #/, '').trim().charAt(0).toUpperCase() || '?'); }
+
+  function card(v) {
+    var now;
+    if (v.product) {
+      now = '<a class="now" href="' + url(v.product.url) + '" target="_blank" rel="noopener">' +
+        (v.product.image ? '<img src="' + url(v.product.image) + '" alt="" loading="lazy">' : '') +
+        '<span><small>' + PAGE.product + '</small><b>' + esc(v.product.name) + '</b><em>' + esc(v.product.price) + '</em></span></a>';
+    } else {
+      now = '<div class="now"><span><small>' + esc(PAGE[v.pageType] || PAGE.other) + '</small>' +
+        (v.pageUrl ? '<a href="' + url(v.pageUrl) + '" target="_blank" rel="noopener">' + esc(v.pageTitle || v.pageUrl) + '</a>' : '') + '</span></div>';
+    }
+    var facts = [v.device === 'mobile' ? 'Điện thoại' : 'Máy tính', v.source ? 'đến từ ' + esc(v.source) : 'vào trực tiếp', 'trên web ' + span(v.duration)].join(', ');
+    return '<article class="v' + (state.focus === v.sid ? ' focus' : '') + '">' +
+      '<header><span class="avatar" aria-hidden="true">' + initial(v.label) + '</span><div><h3>' + esc(v.label) +
+      (v.member ? ' <span class="member">thành viên</span>' : '') + '</h3><p>' + facts + '</p></div></header>' + now +
+      (v.cartCount > 0 ? '<div class="line"><span>Giỏ hàng</span><b>' + v.cartCount + ' sản phẩm' + (v.cartTotal ? ', ' + esc(money(v.cartTotal, v.currency)) : '') + '</b></div>' : '') +
+      (v.orderId ? '<div class="line order"><span>Đơn hàng #' + esc(v.orderId) + '</span><b>' + esc(money(v.orderTotal, v.currency)) + '</b></div>' : '') +
+      '</article>';
+  }
+
+  function statusText() {
+    if (state.paused) return 'Đã tạm dừng';
+    if (state.error) return state.error;
+    var s = Math.round((Date.now() - state.at) / 1000);
+    return 'Cập nhật ' + (s < 2 ? 'vừa xong' : s + ' giây trước');
+  }
+
+  function render() {
+    if (state.view === 'setup') { renderSetup(); return; }
+    var d = state.data;
+    if (!d) { app.innerHTML = '<p class="updated' + (state.error ? ' err' : '') + '">' + esc(state.error || 'Đang kết nối…') + '</p>'; return; }
+    var groups = { browsing: [], cart: [], checkout: [], purchased: [] };
+    d.visitors.forEach(function (v) { (groups[v.status] || groups.browsing).push(v); });
+    var onProduct = d.visitors.filter(function (v) { return v.pageType === 'product'; }).length;
+    document.title = '(' + d.visitors.length + ') Live View';
+
+    var h = '<div class="top"><div class="headline"><h1><span class="pulse' + (state.paused || state.error ? ' off' : '') + '" aria-hidden="true"></span>' +
+      '<strong>' + d.visitors.length + '</strong> khách đang ở trên web</h1>' +
+      '<p>' + onProduct + ' người đang xem sản phẩm. Tính khách có hoạt động trong ' + d.window + ' giây gần nhất.</p></div>' +
+      '<div class="controls"><span class="updated' + (state.error ? ' err' : '') + '" id="updated">' + esc(statusText()) + '</span>' +
+      '<button type="button" data-act="setup">Kết nối web</button>' +
+      '<button type="button" data-act="pause">' + (state.paused ? 'Tiếp tục cập nhật' : 'Tạm dừng') + '</button></div></div>';
+
+    h += '<dl class="today"><div><dt>Lượt khách hôm nay</dt><dd>' + d.today.visits + '</dd></div>' +
+      '<div><dt>Lượt xem sản phẩm</dt><dd>' + d.today.productViews + '</dd></div>' +
+      '<div><dt>Lần thêm vào giỏ</dt><dd>' + d.today.addToCart + '</dd></div>' +
+      '<div><dt>Đơn đặt hôm nay</dt><dd>' + d.today.orders + (d.today.revenue ? ' <small>' + esc(money(d.today.revenue, d.today.currency)) + '</small>' : '') + '</dd></div></dl>';
+
+    h += '<div class="board">' + LANES.map(function (l) {
+      var list = groups[l.key];
+      return '<section class="lane ' + l.key + '"><h2>' + l.title + '<span>' + list.length + '</span></h2>' +
+        (list.length ? list.map(card).join('') : '<p class="empty">' + l.empty + '</p>') + '</section>';
+    }).join('') + '</div>';
+
+    h += '<div class="bottom"><section class="panel"><h2>Sản phẩm đang được xem</h2>' +
+      (d.hot.length ? '<ol class="hot">' + d.hot.map(function (p) {
+        return '<li>' + (p.image ? '<img src="' + url(p.image) + '" alt="" loading="lazy">' : '<span></span>') +
+          '<a href="' + url(p.url) + '" target="_blank" rel="noopener">' + esc(p.name) + '</a><span>' + p.viewers + ' người xem</span></li>';
+      }).join('') + '</ol>' : '<p class="empty" style="margin-top:10px">Khi khách mở trang sản phẩm, sản phẩm đó sẽ hiện ở đây.</p>') +
+      '</section><section class="panel"><h2>Hoạt động gần đây</h2>' +
+      (d.feed.length ? '<ul class="feed">' + d.feed.map(function (e) {
+        var detail = e.product ? ' <b>' + esc(e.product) + '</b>' : '';
+        if (e.type === 'add_to_cart' && e.qty > 1) detail += ' ×' + e.qty;
+        if (e.type === 'purchase' && e.orderId) detail += ' #' + esc(e.orderId);
+        if (e.value && (e.type === 'purchase' || e.type === 'add_to_cart')) detail += ' <em>' + esc(money(e.value, e.currency)) + '</em>';
+        return '<li tabindex="0" class="ev-' + esc(e.type) + (state.fresh[e.id] ? ' new' : '') + '" data-sid="' + esc(e.sid) + '"><span class="dot" aria-hidden="true"></span>' +
+          '<p><b>' + esc(e.label) + '</b> ' + (EVENT[e.type] || esc(e.type)) + detail + '</p><time>' + ago(e.ago) + '</time></li>';
+      }).join('') + '</ul>' : '<p class="empty" style="margin-top:10px">Chưa có hoạt động nào. Mở web của bạn trong cửa sổ ẩn danh rồi xem một sản phẩm để kiểm tra.</p>') +
+      '</section></div>';
+
+    var scroll = app.querySelector('.feed'); var top = scroll ? scroll.scrollTop : 0;
+    app.innerHTML = h;
+    var f = app.querySelector('.feed'); if (f) f.scrollTop = top;
+  }
+
+  function take(data) {
+    state.fresh = {};
+    data.feed.forEach(function (e) {
+      if (!state.seen[e.id]) { if (!state.first) state.fresh[e.id] = true; state.seen[e.id] = true; }
+    });
+    state.first = false; state.at = Date.now(); state.error = '';
+    state.data = data;
+    if (!state.paused && state.view !== 'setup') render();
+  }
+
+
+  // ---------- Trang "Kết nối web" ----------
+  function since(s) { return s == null ? '' : ago(s); }
+  function copyBox(id, value) {
+    return '<div class="copy"><code>' + esc(value) + '</code><button type="button" data-copy="' + id + '">' + (state.copied === id ? 'Đã sao chép' : 'Sao chép') + '</button></div>';
+  }
+  function renderSetup() {
+    var c = state.setup;
+    var h = '<div class="top"><div class="headline"><h1>Kết nối web của bạn</h1>' +
+      '<p>Làm hai việc dưới đây trong trang quản trị WordPress. Trang này tự kiểm tra và báo ngay khi kết nối thành công.</p></div>' +
+      '<div class="controls"><button type="button" data-act="live">Mở Live View</button></div></div>';
+    if (!c) { app.innerHTML = h + '<p class="updated">Đang tải thông tin…</p>'; return; }
+    var hs = c.health;
+
+    var s1 = hs.lastCollect != null ? ['ok', 'Đã kết nối'] :
+      (hs.rejectedOrigin && hs.rejectedAgo < 600) ? ['err', 'Sai địa chỉ web'] : ['wait', 'Đang chờ tín hiệu'];
+    var s2 = hs.lastWebhook != null ? ['ok', 'Đã kết nối'] :
+      (hs.webhookError && hs.webhookErrorAgo < 600) ? ['err', 'Lỗi mã bí mật'] : ['wait', 'Chưa có đơn nào gửi về'];
+
+    h += '<ol class="steps">';
+    h += '<li class="step"><div class="step-head"><h2>Dán đoạn mã này vào web</h2><span class="chip ' + s1[0] + '">' + s1[1] + '</span></div>' +
+      '<p>Dán vào ô chèn mã ở cuối trang (footer) của theme, bấm lưu, rồi xoá cache của web.</p>' +
+      copyBox('snippet', c.snippet) +
+      '<details class="where"><summary>Ô chèn mã nằm ở đâu?</summary><ul>' +
+      '<li>Flatsome: Flatsome → Advanced → Global Settings → ô Footer Scripts.</li>' +
+      '<li>Woodmart: Theme Settings → Custom JS/HTML → ô HTML before &lt;/body&gt;.</li>' +
+      '<li>Theme khác: tìm mục "Footer scripts", "Custom code" hoặc "Tracking code" trong phần cài đặt theme.</li>' +
+      '<li>Web có Google Tag Manager: tạo thẻ Custom HTML, chọn kích hoạt trên All Pages, rồi Publish.</li>' +
+      '<li>Nếu dùng WP Rocket hoặc LiteSpeed với tính năng trì hoãn JavaScript (Delay JS), thêm <code>t.js</code> vào danh sách loại trừ.</li>' +
+      '</ul></details>';
+    if (s1[0] === 'ok') h += '<p style="margin-top:10px">Nhận tín hiệu gần nhất ' + since(hs.lastCollect) + '. <button type="button" data-act="live">Mở Live View</button></p>';
+    else if (s1[0] === 'err') h += '<p class="note err">Web đang gửi tín hiệu từ <b>' + esc(hs.rejectedOrigin) + '</b>, nhưng địa chỉ web đã cài là <b>' + esc(c.sites.join(', ') || '(chưa có)') + '</b>. Sửa lại địa chỉ web trong phần cài đặt của app cho khớp, rồi khởi động lại app.</p>';
+    else h += '<p style="margin-top:10px">Sau khi dán mã, mở web của bạn trong <b>cửa sổ ẩn danh</b>. Tài khoản quản trị đang đăng nhập sẽ không được tính.</p>';
+    if (!c.https) h += '<p class="note warn">App đang chạy không có HTTPS. Trình duyệt sẽ chặn đoạn mã trên web dùng HTTPS.</p>';
+    h += '</li>';
+
+    h += '<li class="step"><div class="step-head"><h2>Thêm webhook để nhận đơn hàng</h2><span class="chip ' + s2[0] + '">' + s2[1] + '</span></div>' +
+      '<p>Vào WooCommerce → Cài đặt → Nâng cao → Webhooks → Thêm webhook. Điền như sau rồi bấm Lưu webhook. Bước này giúp app ghi đúng tổng tiền và tên khách cho từng đơn.</p>' +
+      '<dl class="fields">' +
+      '<dt>Trạng thái</dt><dd>Hoạt động</dd>' +
+      '<dt>Chủ đề</dt><dd>Đơn hàng đã tạo (Order created)</dd>' +
+      '<dt>URL nhận</dt><dd>' + copyBox('webhookUrl', c.webhookUrl) + '</dd>' +
+      '<dt>Mã bí mật</dt><dd>' + copyBox('secret', c.secret) + '</dd>' +
+      '<dt>Phiên bản API</dt><dd>WP REST API Integration v3</dd></dl>';
+    if (s2[0] === 'ok') h += '<p style="margin-top:10px">Nhận đơn gần nhất ' + since(hs.lastWebhook) + '.</p>';
+    else if (s2[0] === 'err') h += '<p class="note err">WooCommerce đã gửi đơn về nhưng mã bí mật không khớp. Sao chép lại mã bí mật ở trên và dán vào webhook.</p>';
+    else h += '<p style="margin-top:10px">Trạng thái sẽ đổi khi web có đơn mới. Bạn có thể đặt thử một đơn thanh toán khi nhận hàng, rồi huỷ đơn đó.</p>';
+    h += '</li></ol>';
+    app.innerHTML = h;
+  }
+  function loadSetup() {
+    return fetch('/api/setup', { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (c) { state.setup = c; if (state.view === 'setup') render(); })
+      .catch(function () {});
+  }
+  function copyText(id) {
+    var v = state.setup && state.setup[id];
+    if (!v) return;
+    var done = function () { state.copied = id; render(); setTimeout(function () { state.copied = ''; render(); }, 1800); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(v).then(done, done);
+    else { var t = document.createElement('textarea'); t.value = v; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); done(); }
+  }
+  setInterval(function () { if (state.view === 'setup' && document.visibilityState === 'visible') loadSetup(); }, 4000);
+
+  var es = new EventSource('/api/stream');
+  var lastMsg = 0;
+  es.onmessage = function (m) {
+    lastMsg = Date.now();
+    try {
+      var d = JSON.parse(m.data);
+      if (!state.view) { state.view = d.connected ? 'live' : 'setup'; if (state.view === 'setup') loadSetup(); }
+      take(d);
+    } catch (e) {}
+  };
+  es.onerror = function () { if (Date.now() - lastMsg > 15000) { state.error = 'Mất kết nối với máy chủ. Đang kết nối lại…'; render(); } };
+  // Dự phòng: nếu 6 giây không nhận được cập nhật trực tiếp thì tự hỏi máy chủ.
+  setInterval(function () {
+    if (document.visibilityState !== 'visible' || Date.now() - lastMsg < 6000) return;
+    fetch('/api/live', { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) { if (!state.view) state.view = d.connected ? 'live' : 'setup'; take(d); })
+      .catch(function () {});
+  }, 3000);
+
+  function focusVisitor(sid) {
+    state.focus = state.focus === sid ? '' : sid;
+    render();
+    var el = app.querySelector('.v.focus');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  app.addEventListener('click', function (e) {
+    if (e.target.closest('[data-act="pause"]')) { state.paused = !state.paused; render(); return; }
+    if (e.target.closest('[data-act="setup"]')) { state.view = 'setup'; render(); loadSetup(); window.scrollTo(0, 0); return; }
+    if (e.target.closest('[data-act="live"]')) { state.view = 'live'; render(); window.scrollTo(0, 0); return; }
+    var cp = e.target.closest('[data-copy]');
+    if (cp) { copyText(cp.getAttribute('data-copy')); return; }
+    var row = e.target.closest('.feed li');
+    if (row && !e.target.closest('a')) focusVisitor(row.getAttribute('data-sid'));
+  });
+  app.addEventListener('keydown', function (e) {
+    var row = e.target.closest && e.target.closest('.feed li');
+    if (row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); focusVisitor(row.getAttribute('data-sid')); }
+  });
+  setInterval(function () { var u = document.getElementById('updated'); if (u && state.data && !state.paused && !state.error) u.textContent = statusText(); }, 1000);
+})();
+</script>
+</body>
+</html>
